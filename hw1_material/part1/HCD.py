@@ -11,25 +11,76 @@ class Harris_corner_detector(object):
         ### TODO ####
         # Step 1: Smooth the image by Gaussian kernel
         # - Function: cv2.GaussianBlur (kernel = 3, sigma = 1.5)
+        smooth_image = cv2.GaussianBlur(img, (3, 3), 1.5)
 
         # Step 2: Calculate Ix, Iy (1st derivative of image along x and y axis)
         # - Function: cv2.filter2D (kernel = [[1.,0.,-1.]] for Ix or [[1.],[0.],[-1.]] for Iy)
+        kernel_for_Ix = np.array([
+            [0., 0., 0.], 
+            [1.,0.,-1.], 
+            [0., 0., 0.]
+        ])
+        kernel_for_Iy = np.array([
+            [0., 1., 0.],
+            [0., 0., 0.],
+            [0., -1., 0.]
+        ])
+        Ix = cv2.filter2D(smooth_image, -1, kernel_for_Ix)
+        Iy = cv2.filter2D(smooth_image, -1, kernel_for_Iy)
 
         # Step 3: Compute Ixx, Ixy, Iyy (Ixx = Ix*Ix, ...)
+        Ixx = np.dot(Ix, Ix) # 這邊是dot product還是Hadamard product?
+        Ixy = np.dot(Ix, Iy)
+        Iyy = np.dot(Iy, Iy)
 
         # Step 4: Compute Sxx, Sxy, Syy (weighted summation of Ixx, Ixy, Iyy in neighbor pixels)
         # - Function: cv2.GaussianBlur (kernel = 3, sigma = 1.)
+        Sxx = cv2.GaussianBlur(Ixx, (3, 3), 1.)
+        Sxy = cv2.GaussianBlur(Ixy, (3, 3), 1.)
+        Syy = cv2.GaussianBlur(Iyy, (3, 3), 1.)
 
         # Step 5: Compute the det and trace of matrix M (M = [[Sxx, Sxy], [Sxy, Syy]])
+        det = np.zeros(Sxx.shape)
+        trace = np.zeros(Sxx.shape)
+        for i in range(Sxx.shape[0]): 
+            for j in range(Sxx.shape[1]): 
+                M = np.array([[Sxx[i, j], Sxy[i, j]], [Sxy[i, j], Syy[i, j]]])
+                det[i, j] = np.linalg.det(M)
+                trace[i, j] = np.trace(M)
+
+        # print(Sxx.shape)  # (256, 256)
 
         # Step 6: Compute the response of the detector by det/(trace+1e-12)
+        R_matrix = np.zeros(Sxx.shape)
+        for i in range(Sxx.shape[0]): 
+            for j in range(Sxx.shape[1]): 
+                R_matrix[i, j] = det[i, j]/trace[i, j]
 
-        return response
+        # print(R_matrix.shape) # (256, 256)
+
+        cv2.imshow('img_show', R_matrix)
+        # 按空白鍵退出
+        key = None
+        while True: 
+            key = cv2.waitKey(0)
+            if key == 32: 
+                break
+
+        cv2.destroyAllWindows()
+
+        # return 0
+        return R_matrix
     
     def post_processing(self, response):
         ### TODO ###
         # Step 1: Thresholding
-
+        after_thresholding = cv2.threshold(response, self.threshold, 255., cv2.THRESH_BINARY)
+        print(response[1:10, 1:10])
+        print(np.sum(response>=self.threshold))
+        print(np.where(response>=self.threshold))
+        print(np.where(after_thresholding==255.))
         # Step 2: Find local maximum
 
-        return local_max
+
+        return 0
+        # return local_max
