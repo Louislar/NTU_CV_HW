@@ -72,7 +72,7 @@ def main():
         after_jbf_list[i] = cv2.cvtColor(after_jbf_list[i],cv2.COLOR_RGB2BGR)
         cv2.imwrite(result_dir+'jbf_{0}.png'.format(i), after_jbf_list[i])
     # 4.3 save l1 norm
-    with open(result_dir+'l1norm.txt', 'w') as out_f: 
+    with open(result_dir+'l1norm.txt', 'w+') as out_f: 
         for a_l1 in [str(i) for i in l1_norm_list]: 
             out_f.writelines(a_l1 + '\n')
 

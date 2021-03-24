@@ -63,6 +63,8 @@ class Harris_corner_detector(object):
         # print(R_matrix.shape) # (256, 256)
 
         # return 0
+        # from collections import Counter
+        # print(sorted(Counter(R_matrix.flatten()).items(), reverse=True)[0])
         return R_matrix
     
     def post_processing(self, response):
