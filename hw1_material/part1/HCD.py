@@ -27,20 +27,20 @@ class Harris_corner_detector(object):
         ])
         Ix = cv2.filter2D(smooth_image, -1, kernel_for_Ix)
         Iy = cv2.filter2D(smooth_image, -1, kernel_for_Iy)
-        print(Ix.dtype)
+        # print(Ix.dtype)
 
         # Step 3: Compute Ixx, Ixy, Iyy (Ixx = Ix*Ix, ...)
         Ixx = np.multiply(Ix, Ix) # 這邊是dot product還是Hadamard product?
         Ixy = np.multiply(Ix, Iy)
         Iyy = np.multiply(Iy, Iy)
-        print(Ixx.dtype)
+        # print(Ixx.dtype)
 
         # Step 4: Compute Sxx, Sxy, Syy (weighted summation of Ixx, Ixy, Iyy in neighbor pixels)
         # - Function: cv2.GaussianBlur (kernel = 3, sigma = 1.)
         Sxx = cv2.GaussianBlur(Ixx, (3, 3), 1.)
         Sxy = cv2.GaussianBlur(Ixy, (3, 3), 1.)
         Syy = cv2.GaussianBlur(Iyy, (3, 3), 1.)
-        print(Sxx.dtype)
+        # print(Sxx.dtype)
 
         # Step 5: Compute the det and trace of matrix M (M = [[Sxx, Sxy], [Sxy, Syy]])
         det = np.zeros(Sxx.shape)
@@ -50,15 +50,15 @@ class Harris_corner_detector(object):
                 M = np.array([[Sxx[i, j], Sxy[i, j]], [Sxy[i, j], Syy[i, j]]])
                 det[i, j] = np.linalg.det(M)
                 trace[i, j] = np.trace(M)
-        print(det.dtype)
-        print(trace.dtype)
+        # print(det.dtype)
+        # print(trace.dtype)
 
         # Step 6: Compute the response of the detector by det/(trace+1e-12)
         R_matrix = np.zeros(Sxx.shape)
         for i in range(Sxx.shape[0]): 
             for j in range(Sxx.shape[1]): 
                 R_matrix[i, j] = det[i, j]/(trace[i, j]+10**-12)
-        print(R_matrix.dtype)
+        # print(R_matrix.dtype)
 
         # print(R_matrix.shape) # (256, 256)
 
@@ -85,15 +85,15 @@ class Harris_corner_detector(object):
                     local_maximum_list.append([i-2, j-2])
 
         # print(local_maximum_list)
-        cv2.imshow('img_show', after_padding)
-        # 按空白鍵退出
-        key = None
-        while True: 
-            key = cv2.waitKey(0)
-            if key == 32: 
-                break
+        # cv2.imshow('img_show', after_padding)
+        # # 按空白鍵退出
+        # key = None
+        # while True: 
+        #     key = cv2.waitKey(0)
+        #     if key == 32: 
+        #         break
 
-        cv2.destroyAllWindows()
+        # cv2.destroyAllWindows()
 
         # return 0
         return local_maximum_list

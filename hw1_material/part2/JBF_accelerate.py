@@ -73,19 +73,19 @@ class Joint_bilateral_filter(object):
                 after_conv_mat[i-half_window_len, j-half_window_len, :] = after_divide 
 
         
-        # print(after_conv_mat.shape)
-        # print(after_conv_mat[0:20, 0:20])
-        # print(after_conv_mat.dtype)
+        print(after_conv_mat.shape)
+        print(after_conv_mat[0:20, 0:20])
+        print(after_conv_mat.dtype)
         
 
 
-        # cv2.imshow('img_show', cv2.cvtColor(np.clip(after_conv_mat, 0, 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
-        # # 按空白鍵退出
-        # key = None
-        # while True: 
-        #     key = cv2.waitKey(0)
-        #     if key == 32: 
-        #         break
+        cv2.imshow('img_show', cv2.cvtColor(np.clip(after_conv_mat, 0, 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+        # 按空白鍵退出
+        key = None
+        while True: 
+            key = cv2.waitKey(0)
+            if key == 32: 
+                break
 
         cv2.destroyAllWindows()
         output = after_conv_mat

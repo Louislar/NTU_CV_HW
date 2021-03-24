@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import argparse
 import time
-from JBF import Joint_bilateral_filter
+from JBF_accelerate import Joint_bilateral_filter
 
 
 def main():
@@ -21,22 +21,12 @@ def main():
     # create JBF class
     JBF = Joint_bilateral_filter(args.sigma_s, args.sigma_r)
     
-    # bf_out = JBF.joint_bilateral_filter(img_rgb, img_rgb).astype(np.uint8)
-    # t0 = time.time()
-    # jbf_out = JBF.joint_bilateral_filter(img_rgb, guidance).astype(np.uint8)
-    # print('[Time] %.4f sec'%(time.time()-t0))
+    bf_out = JBF.joint_bilateral_filter(img_rgb, img_rgb).astype(np.uint8)
+    t0 = time.time()
+    jbf_out = JBF.joint_bilateral_filter(img_rgb, guidance).astype(np.uint8)
+    print('[Time] %.4f sec'%(time.time()-t0))
     
     bf_gt = cv2.cvtColor(cv2.imread(args.gt_bf_path), cv2.COLOR_BGR2RGB)
-    print(bf_gt[0:20, 0:20])
-    cv2.imshow('img_show', cv2.cvtColor(bf_gt, cv2.COLOR_RGB2BGR))
-    # 按空白鍵退出
-    key = None
-    while True: 
-        key = cv2.waitKey(0)
-        if key == 32: 
-            break
-
-
     jbf_gt = cv2.cvtColor(cv2.imread(args.gt_jbf_path), cv2.COLOR_BGR2RGB)
     bf_error = np.sum(np.abs(bf_out.astype('int32')-bf_gt.astype('int32')))
     jbf_error = np.sum(np.abs(jbf_out.astype('int32')-jbf_gt.astype('int32')))
