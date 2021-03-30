@@ -35,6 +35,24 @@ class Joint_bilateral_filter(object):
         normalized_padded_guidance = padded_guidance / 255.
         # 2.2 range kernel lookup table (how to do this?)
         #       Note: range kernel will only use guidance image to calculate kernel entries
+        unique_value = np.unique(padded_guidance)
+        unique_value_normalized = np.unique(normalized_padded_guidance)
+        # print(unique_value)
+        new_unique_value = np.zeros(256)
+        new_unique_value[unique_value] = unique_value_normalized
+        unique_value = new_unique_value
+        # print(new_unique_value)
+
+        # print(unique_value)
+        # print(unique_value.shape)
+        idx_arr = np.arange(0, len(unique_value))  
+        unique_val_2_idx_dict = dict(zip(unique_value, idx_arr))
+        unique_val_2_idx_k = np.array(list(unique_val_2_idx_dict.keys()))
+        unique_val_2_idx_v = np.array(list(unique_val_2_idx_dict.values()))
+        lookup_table_mat = unique_value[:, None]-unique_value
+        lookup_table_mat = np.exp(-(lookup_table_mat**2)/(2*self.sigma_r**2))
+
+        print(lookup_table_mat.shape) 
         
 
         # 3. convolution (naiive solution)
@@ -61,8 +79,33 @@ class Joint_bilateral_filter(object):
                 elif guidance_img_dim == 2: 
                     central_val = normalized_padded_guidance[i,j]
                     normalized_window_pixels = normalized_padded_guidance[i-half_window_len:i+half_window_len+1, j-half_window_len:j+half_window_len+1]
-                    normalized_window_pixels = np.power((normalized_window_pixels - central_val), 2)
-                    final_range_kernel = np.exp(-(normalized_window_pixels)/(2*self.sigma_r**2))
+                    origin_window_pixels = padded_guidance[i-half_window_len:i+half_window_len+1, j-half_window_len:j+half_window_len+1]
+                    # original method
+                    # normalized_window_pixels = np.power((normalized_window_pixels - central_val), 2)
+                    # final_range_kernel = np.exp(-(normalized_window_pixels)/(2*self.sigma_r**2))
+                    # print(final_range_kernel.shape)
+
+                    # lookup table ver 1.
+                    # central_idx = unique_val_2_idx_dict[central_val]
+                    # final_range_kernel = np.zeros_like(normalized_window_pixels)
+                    # for k, v in unique_val_2_idx_dict.items(): 
+                    #     final_range_kernel[normalized_window_pixels == k] = lookup_table_mat[v, central_idx]
+
+                    # lookup table ver 2.
+                    # central_idx = unique_val_2_idx_dict[central_val]
+                    # idx = np.searchsorted(unique_val_2_idx_k,normalized_window_pixels.ravel()).reshape(normalized_window_pixels.shape)
+                    # idx[idx==len(unique_val_2_idx_k)] = 0
+                    # mask = unique_val_2_idx_k[idx] == normalized_window_pixels
+                    # out = np.where(mask, unique_val_2_idx_v[idx], 0)
+                    # out_flat = out.flatten()
+                    # final_range_kernel = lookup_table_mat[out_flat, central_idx].reshape(normalized_window_pixels.shape)
+
+                    # lookup table ver 3.
+                    final_range_kernel = lookup_table_mat[origin_window_pixels.flatten(), padded_guidance[i,j]].reshape(origin_window_pixels.shape)
+                    # print(final_range_kernel.shape)
+
+
+
                     after_multiply_denominator = np.multiply(gaussian_kernel, final_range_kernel)
                     after_multiply_denominator = after_multiply_denominator[:, :, None]
 
@@ -73,20 +116,20 @@ class Joint_bilateral_filter(object):
                 after_conv_mat[i-half_window_len, j-half_window_len, :] = after_divide 
 
         
-        print(after_conv_mat.shape)
-        print(after_conv_mat[0:20, 0:20])
-        print(after_conv_mat.dtype)
+        # print(after_conv_mat.shape)
+        # print(after_conv_mat[0:20, 0:20])
+        # print(after_conv_mat.dtype)
         
 
 
-        cv2.imshow('img_show', cv2.cvtColor(np.clip(after_conv_mat, 0, 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
-        # 按空白鍵退出
-        key = None
-        while True: 
-            key = cv2.waitKey(0)
-            if key == 32: 
-                break
+        # cv2.imshow('img_show', cv2.cvtColor(np.clip(after_conv_mat, 0, 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+        # # 按空白鍵退出
+        # key = None
+        # while True: 
+        #     key = cv2.waitKey(0)
+        #     if key == 32: 
+        #         break
 
-        cv2.destroyAllWindows()
+        # cv2.destroyAllWindows()
         output = after_conv_mat
         return np.clip(output, 0, 255).astype(np.uint8)
