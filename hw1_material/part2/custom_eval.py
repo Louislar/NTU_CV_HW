@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import argparse
 import time
-from JBF_accelerate import Joint_bilateral_filter
+from JBF_accelerate_ex import Joint_bilateral_filter
 
 
 def main():

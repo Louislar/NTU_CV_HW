@@ -24,6 +24,7 @@ def main():
     # cv2.circle(img, (2, 252), 10, (0, 0, 255), -1)
     for [x, y] in result: 
         cv2.circle(img, (y, x), 2, (0, 0, 255), -1)
+    print(len(result))
 
 
     # 儲存image

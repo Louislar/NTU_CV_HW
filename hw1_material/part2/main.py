@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import argparse
 import os
-from JBF import Joint_bilateral_filter
+from JBF_jin_yu import Joint_bilateral_filter
 from collections import Counter
 
 def read_arg_file(txt_path):
@@ -27,7 +27,7 @@ def main():
     parser.add_argument('--image_path', default='./testdata/1.png', help='path to input image')
     parser.add_argument('--setting_path', default='./testdata/1_setting.txt', help='path to setting file')
     args = parser.parse_args()
-    result_dir = args.image_path.replace('.png', '') + '_result/'
+    result_dir = args.image_path.replace('.png', '') + '_result_accelerate_ex/'
     rgb_weight_list, sigma_s, sigma_r = read_arg_file(args.setting_path)
 
     img = cv2.imread(args.image_path)
@@ -36,12 +36,12 @@ def main():
 
     ### TODO ###
     # 1. gray scale image (6 of them) (cv2的算好了)
-    print(img_rgb.shape)
     gray_scale_imgs = [img_gray]
     for rgb_weight in rgb_weight_list: 
-        after_multiply = np.multiply(img, rgb_weight)
+        print(rgb_weight)
+        after_multiply = np.multiply(img_rgb, rgb_weight)
         after_sum = np.sum(after_multiply, axis=2)
-        after_sum = after_sum.astype('uint8')
+        after_sum = after_sum.astype(np.uint8)
         gray_scale_imgs.append(after_sum)
 
     # 2.0 bilater filter of origin img 
@@ -57,7 +57,8 @@ def main():
     l1_norm_list = []
     for a_jbf_out in after_jbf_list: 
         l1_norm_list.append(
-            np.sum(np.abs(np.subtract(a_jbf_out, origin_bf)))
+            np.sum(np.abs(np.subtract(a_jbf_out.astype(np.int32), origin_bf.astype(np.int32))))
+            # np.sum(np.subtract(a_jbf_out, origin_bf))
         )
     print('lowest cost idx: ', np.argmin(l1_norm_list))
 
