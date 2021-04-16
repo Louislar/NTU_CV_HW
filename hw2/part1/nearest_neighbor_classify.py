@@ -36,7 +36,19 @@ def nearest_neighbor_classify(train_image_feats, train_labels, test_image_feats)
             a list(M) of string, each string indicate the predict
             category for each testing image.
     '''
+    distance_mat = distance.cdist(train_image_feats, test_image_feats)
+    train_labels = np.array(train_labels)
 
+    # k=1
+    # nearest_idx = np.argmin(distance_mat, axis=0)
+    # test_predicts = train_labels[nearest_idx]   # k=1
+
+    # k=x
+    k = 2
+    nearest_idx = np.argsort(distance_mat, axis=0)
+    nearest_idx = nearest_idx[:k, :]
+    nearest_idx = np.apply_along_axis(lambda x: np.argmax(np.bincount(x)), axis=0, arr=nearest_idx)
+    test_predicts = train_labels[nearest_idx]
     #############################################################################
     #                                END OF YOUR CODE                           #
     #############################################################################
