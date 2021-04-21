@@ -3,6 +3,7 @@ import numpy as np
 from cyvlfeat.sift.dsift import dsift
 from cyvlfeat.kmeans import kmeans
 from time import time
+import cv2
 
 #This function will sample SIFT descriptors from the training images,
 #cluster them with kmeans, and then return the cluster centers.
@@ -56,6 +57,38 @@ def build_vocabulary(image_paths, vocab_size):
     Output :
         Clusters centers of Kmeans
     '''
+
+    '''
+    1. Convert to gray scale 
+    2. sift 
+    3. k means 
+    '''
+
+    imgs = [cv2.imread(path) for path in image_paths]
+
+    # convert to gray image 
+    gray_imgs = [cv2.cvtColor(i, cv2.COLOR_BGR2GRAY) for i in imgs]
+    print(gray_imgs[0].shape)
+    print(np.array(gray_imgs).shape)
+
+    # sift
+    sifts = [dsift(i, step=[25, 25], fast=True)[1].astype(np.float64) for i in gray_imgs]
+    print(sifts[0].shape)
+    print(len(sifts))
+
+    # randomly sample descriptors from sift result (concatenate them all) 
+    num_of_descriptors = 50 # number of descriptors(a sift descriptors which has 128 dimensions) randomly pick from each training image 
+    sifts_rand_desciptors = [mat[np.random.choice(mat.shape[0], num_of_descriptors, replace=False), :] for mat in sifts]
+    print(sifts_rand_desciptors[0].shape)
+    sifts_rand_desciptors = np.concatenate(sifts_rand_desciptors, axis=0)
+    print(sifts_rand_desciptors.shape)
+
+    # kmeans with k = vocab_size
+    centroids = kmeans(sifts_rand_desciptors, vocab_size)
+    print(centroids.shape)
+
+    vocab = centroids
+
 
     ##################################################################################
     #                                END OF YOUR CODE                                #

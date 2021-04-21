@@ -15,6 +15,8 @@ if __name__ == "__main__":
 
     if model_type == 'conv':
         model = ConvNet()
+        model.load_state_dict(torch.load('./checkpoint/ConvNet.pth'))
+        model.eval()
     elif model_type == 'mynet':
         model = MyNet()
 
