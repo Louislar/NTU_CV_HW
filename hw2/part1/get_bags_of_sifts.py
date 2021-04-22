@@ -40,8 +40,15 @@ def get_bags_of_sifts(image_paths):
     imgs = [cv2.imread(path) for path in image_paths]
     gray_imgs = [cv2.cvtColor(i, cv2.COLOR_BGR2GRAY) for i in imgs]
     # sift
-    sifts = [dsift(i, step=[7, 7], fast=True)[1].astype(np.float64) for i in gray_imgs]
+    sifts = [dsift(i, step=[5, 5], fast=True)[1].astype(np.float64) for i in gray_imgs]
     print('Training images and sift\'s shape: ', (len(sifts), sifts[0].shape))
+    
+    # TODO
+    # randomly sample descriptors from sift result (concatenate them all)
+    num_of_descriptors = 300
+    np.random.seed(0)
+    sifts_rand_descriptors = [mat[np.random.choice(mat.shape[0], num_of_descriptors, replace=False), :] for mat in sifts]
+    print('Randomly pick sift descriptor\'s shape: ', len(sifts_rand_descriptors), sifts_rand_descriptors[0].shape)
 
     # read vocab.pkl 
     vocab = None 
