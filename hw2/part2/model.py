@@ -32,7 +32,7 @@ class ConvNet(nn.Module):
         # TODO
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(x.size(0), 16 * 5 * 5)
+        x = x.view(x.size(0), 16 * 5 * 5)   # x.size(0) = batch size 
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
@@ -45,10 +45,34 @@ class MyNet(nn.Module):
     def __init__(self):
         super(MyNet, self).__init__()
         # TODO
+        self.conv1 = nn.Conv2d(1, 8, 3, padding=1)
+        self.conv2 = nn.Conv2d(8, 8, 3, padding=1)
+        self.conv3 = nn.Conv2d(8, 16, 3)
+        self.conv4 = nn.Conv2d(16, 16, 3)
+        self.conv5 = nn.Conv2d(16, 32, 3)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.fc1 = nn.Linear(32*10*10, 256)
+        self.fc2 = nn.Linear(256, 128)
+        self.fc3 = nn.Linear(128, 64)
+        self.fc4 = nn.Linear(64, 32)
+        self.fc5 = nn.Linear(32, 16)
+        self.fc6 = nn.Linear(16, 10)
 
     def forward(self, x):
         # TODO
-        return out
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        x = self.pool(F.relu(self.conv4(x)))
+        x = F.relu(self.conv5(x))
+        x = x.view(x.size(0), 32 * 10 * 10)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        x = F.relu(self.fc4(x))
+        x = F.relu(self.fc5(x))
+        x = self.fc6(x)
+        return x
 
     def name(self):
         return "MyNet"
