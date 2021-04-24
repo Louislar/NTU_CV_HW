@@ -72,12 +72,12 @@ def build_vocabulary(image_paths, vocab_size):
     print(np.array(gray_imgs).shape)
 
     # sift
-    sifts = [dsift(i, step=[10, 10], fast=True)[1].astype(np.float64) for i in gray_imgs]
+    sifts = [dsift(i, step=[3, 3], size=5, fast=True)[1].astype(np.float64) for i in gray_imgs]
     print(sifts[0].shape)
     print(len(sifts))
 
     # randomly sample descriptors from sift result (concatenate them all) 
-    num_of_descriptors = 250 # number of descriptors(a sift descriptors which has 128 dimensions) randomly pick from each training image 
+    num_of_descriptors = 500 # number of descriptors(a sift descriptors which has 128 dimensions) randomly pick from each training image 
     sifts_rand_desciptors = [mat[np.random.choice(mat.shape[0], num_of_descriptors, replace=False), :] for mat in sifts]
     print(sifts_rand_desciptors[0].shape)
     sifts_rand_desciptors = np.concatenate(sifts_rand_desciptors, axis=0)
