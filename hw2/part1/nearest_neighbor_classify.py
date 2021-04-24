@@ -47,7 +47,14 @@ def nearest_neighbor_classify(train_image_feats, train_labels, test_image_feats)
     k = 2
     nearest_idx = np.argsort(distance_mat, axis=0)
     nearest_idx = nearest_idx[:k, :]
-    nearest_idx = np.apply_along_axis(lambda x: np.argmax(np.bincount(x)), axis=0, arr=nearest_idx)
+    # nearest_idx = np.apply_along_axis(lambda x: np.argmax(np.bincount(x)), axis=0, arr=nearest_idx)
+    def _func(_arr): 
+        _bincount = np.bincount(_arr)
+        highest_count = np.max(_bincount)
+        highest_count_idx = np.where(_bincount==highest_count)[0]
+        first_highest_count = _arr[np.isin(_arr, highest_count_idx)][0]
+        return first_highest_count
+    nearest_idx = np.apply_along_axis(lambda x: _func(x), axis=0, arr=nearest_idx)
     test_predicts = train_labels[nearest_idx]
     #############################################################################
     #                                END OF YOUR CODE                           #
