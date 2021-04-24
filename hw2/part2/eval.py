@@ -19,6 +19,8 @@ if __name__ == "__main__":
         model.eval()
     elif model_type == 'mynet':
         model = MyNet()
+        model.load_state_dict(torch.load('./checkpoint/MyNet.pth'))
+        model.eval()
 
     #######################################################################
     # Modifiy this part to load your trained model

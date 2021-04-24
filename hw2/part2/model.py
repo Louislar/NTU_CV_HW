@@ -53,10 +53,9 @@ class MyNet(nn.Module):
         self.pool = nn.MaxPool2d(2, 2)
         self.fc1 = nn.Linear(32*10*10, 256)
         self.fc2 = nn.Linear(256, 128)
-        self.fc3 = nn.Linear(128, 64)
-        self.fc4 = nn.Linear(64, 32)
-        self.fc5 = nn.Linear(32, 16)
-        self.fc6 = nn.Linear(16, 10)
+        self.fc3 = nn.Linear(128, 32)
+        self.fc4 = nn.Linear(32, 16)
+        self.fc5 = nn.Linear(16, 10)
 
     def forward(self, x):
         # TODO
@@ -70,8 +69,7 @@ class MyNet(nn.Module):
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
         x = F.relu(self.fc4(x))
-        x = F.relu(self.fc5(x))
-        x = self.fc6(x)
+        x = self.fc5(x)
         return x
 
     def name(self):
