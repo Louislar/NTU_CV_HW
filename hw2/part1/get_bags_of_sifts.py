@@ -40,12 +40,12 @@ def get_bags_of_sifts(image_paths):
     imgs = [cv2.imread(path) for path in image_paths]
     gray_imgs = [cv2.cvtColor(i, cv2.COLOR_BGR2GRAY) for i in imgs]
     # sift
-    sifts = [dsift(i, step=[3, 3], size=5, fast=True)[1].astype(np.float64) for i in gray_imgs]
+    sifts = [dsift(i, step=[3, 3], size=3, fast=True)[1].astype(np.float64) for i in gray_imgs]
     print('Training images and sift\'s shape: ', (len(sifts), sifts[0].shape))
     
     # TODO
     # randomly sample descriptors from sift result (concatenate them all)
-    num_of_descriptors = 500
+    num_of_descriptors = 750
     np.random.seed(0)
     sifts_rand_descriptors = [mat[np.random.choice(mat.shape[0], num_of_descriptors, replace=False), :] for mat in sifts]
     print('Randomly pick sift descriptor\'s shape: ', len(sifts_rand_descriptors), sifts_rand_descriptors[0].shape)
@@ -65,7 +65,7 @@ def get_bags_of_sifts(image_paths):
     print('Nearest vocabulary matrix\'s shape: ', (len(nearest_vocab), nearest_vocab[0].shape))
     # construct each training image's histogram 
     vocab_hist = [np.bincount(c_vocab, minlength=vocab.shape[0]) for c_vocab in nearest_vocab]
-    normalize_vocab_hist = [h_vocab / np.max(h_vocab) for h_vocab in vocab_hist]
+    normalize_vocab_hist = [h_vocab / np.sum(h_vocab) for h_vocab in vocab_hist]
     print('Vocabulary histogram matrix\'s shape: ', (len(vocab_hist), vocab_hist[0].shape))
     # make into numpy array with shape = (N, d) 
     image_feats = np.vstack(normalize_vocab_hist)
