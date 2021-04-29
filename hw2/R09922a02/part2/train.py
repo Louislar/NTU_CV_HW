@@ -8,7 +8,6 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 from model import ConvNet, MyNet
 from data import get_dataloader
-from torchsummary import summary
 
 # To avoid CUDA oom (really don't know why this will happen)
 torch.cuda.empty_cache()
@@ -94,7 +93,7 @@ if __name__ == "__main__":
         ## Validation ##
         ################
         model.eval()    # Switch to the evaluation mode --> inference mode 
-        # evaluation using validation set 
+        # TODO evaluation using validation set 
         valid_correct = 0 
         valid_total = 0 
         valid_loss = 0
@@ -119,31 +118,8 @@ if __name__ == "__main__":
     # Save trained model
     torch.save(model.state_dict(), './checkpoint/%s.pth' % model.name())
 
-    # model validation 
-    print('\n======= validation after saving =======')
-    model.eval()
-    # evaluation using validation set 
-    valid_correct = 0 
-    valid_total = 0 
-    valid_loss = 0
-    for data in val_loader: 
-        images, labels = data
-        if use_cuda:
-            images, labels = images.cuda(), labels.cuda()
-        outputs = model(images)
-        _, predicts = torch.max(outputs.data, 1)
-        valid_total += labels.size(0)
-        valid_correct += (predicts == labels).sum().item()
-        valid_loss += float(criterion(outputs, labels))
-    print('Avg loss of the network on the validation images: %f ' % (valid_loss / valid_total))
-    print('Acc of the network on the validation images: %f4 %%' % (100 * valid_correct / valid_total))
-    print('Validation set size: ', valid_total)
-
-
     # Print model structure 
     print(model.name)
-    # print number of parameters in the model 
-    print(summary(model, (1, 28, 28)))
 
     # Plot Learning Curve
     # TODO
