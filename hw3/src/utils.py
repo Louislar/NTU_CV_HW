@@ -18,10 +18,27 @@ def solve_homography(u, v):
     if N < 4:
         print('At least 4 points should be given')
 
-    # TODO: 1.forming A
+    # I prefer solution 2 
+    # TODO: 1.forming A 
+    A_row_list = []
+    for point_u, point_v in zip(u, v): 
+        # print(point_u, ', ', point_v)
+        arr1 = np.array([point_u[0], point_u[1], 1, 0, 0, 0, -1 * point_u[0] * point_v[0], -1 * point_u[1] * point_v[0], -1 * point_v[0]])
+        arr2 = np.array([0, 0, 0, point_u[0], point_u[1], 1, -1 * point_u[0] * point_v[1], -1 * point_u[1] * point_v[1], -1 * point_v[1]])
+        A_row_list.append(arr1)
+        A_row_list.append(arr2)
+    A_mat = np.vstack(A_row_list)
+    # print(A_mat.shape)
 
     # TODO: 2.solve H with A
-
+    (U, D, V) = np.linalg.svd(A_mat)
+    V = np.transpose(V)
+    H = V[:, -1]
+    H = H.reshape((3, 3))
+    # print(U.shape)
+    # print(D.shape)
+    # print(V.shape)
+    # print(H.shape)
     return H
 
 
@@ -63,8 +80,26 @@ def warping(src, dst, H, ymin, ymax, xmin, xmax, direction='b'):
     H_inv = np.linalg.inv(H)
 
     # TODO: 1.meshgrid the (x,y) coordinate pairs
+    meshgrid_x, meshgrid_y = np.meshgrid(np.arange(xmin, xmax), np.arange(ymin, ymax))
+    # meshgrid_x_3d = meshgrid_x.reshape((meshgrid_x.shape[0], meshgrid_x.shape[1], 1))
+    # meshgrid_y_3d = meshgrid_y.reshape((meshgrid_y.shape[0], meshgrid_y.shape[1], 1))
+    # meshgrid_xy_3d = np.concatenate((meshgrid_x_3d, meshgrid_y_3d), axis=2)
+    # meshgrid_xy_3d_final = meshgrid_xy_3d.reshape((meshgrid_xy_3d.shape[2], meshgrid_xy_3d.shape[0]*meshgrid_xy_3d.shape[1]))
+    # print('ymin: ', ymin)
+    # print('ymax: ', ymax)
+    # print(meshgrid_y)
+    # print(meshgrid_y.shape)
+    # print(meshgrid_x)
+    # print(meshgrid_y)
 
     # TODO: 2.reshape the destination pixels as N x 3 homogeneous coordinate
+    pixels_idx = np.vstack([
+        meshgrid_x.reshape(meshgrid_x.shape[0]*meshgrid_x.shape[1]), 
+        meshgrid_y.reshape(meshgrid_y.shape[0]*meshgrid_y.shape[1]), 
+        np.ones((meshgrid_y.shape[0]*meshgrid_y.shape[1]), dtype=int)
+    ])
+    print(pixels_idx)
+
 
     if direction == 'b':
         # TODO: 3.apply H_inv to the destination pixels and retrieve (u,v) pixels, then reshape to (ymax-ymin),(xmax-xmin)
@@ -79,13 +114,45 @@ def warping(src, dst, H, ymin, ymax, xmin, xmax, direction='b'):
 
     elif direction == 'f':
         # TODO: 3.apply H to the source pixels and retrieve (u,v) pixels, then reshape to (ymax-ymin),(xmax-xmin)
+        new_pixels_idx = np.dot(H, pixels_idx)
+        print(new_pixels_idx[:, :])
+        new_pixels_idx[0, :] = np.divide(new_pixels_idx[0, :], new_pixels_idx[2, :])
+        new_pixels_idx[1, :] = np.divide(new_pixels_idx[1, :], new_pixels_idx[2, :])
+        new_pixels_idx[2, :] = np.ones_like(new_pixels_idx[2, :])
+
+        print(pixels_idx.shape)
+        print(new_pixels_idx.shape)
+        print(new_pixels_idx[:, :])
+
+        new_pixels_idx = new_pixels_idx.reshape((3, ymax-ymin, xmax-xmin))
+        print(new_pixels_idx[:, 0, 0])
 
         # TODO: 4.calculate the mask of the transformed coordinate (should not exceed the boundaries of destination image)
+        mask = np.ones_like(new_pixels_idx, dtype=bool)
+        mask[0, :, :] = (new_pixels_idx[0, :, :] >= 0) & (new_pixels_idx[0, :, :] < w_dst)
+        mask[1, :, :] = (new_pixels_idx[1, :, :] >= 0) & (new_pixels_idx[1, :, :] < h_dst)
+        new_mask = (mask[0, :, :] & mask[1, :, :])
+        # print(new_mask.shape)
 
         # TODO: 5.filter the valid coordinates using previous obtained mask
+        valid_coord_idx = new_pixels_idx[:, new_mask]
+        valid_coord_idx = np.round(valid_coord_idx).astype(int)
+        valid_coord_idx = valid_coord_idx[:2, :]
+        valid_coord_idx = valid_coord_idx.reshape(2, ymax-ymin, xmax-xmin)
+        print(valid_coord_idx.shape)
+        print(valid_coord_idx)
 
         # TODO: 6. assign to destination image using advanced array indicing
+        # print(dst[valid_coord_idx[0, :, :], valid_coord_idx[1, :, :], :].shape)
+        # new_mask = np.transpose(new_mask)
+        print(src.shape)
+        print(new_mask.shape)
+        print(src[new_mask, :].reshape((src.shape[0], src.shape[1], src.shape[2])).shape)
+        dst[valid_coord_idx[1, :, :], valid_coord_idx[0, :, :], :] = \
+        src[new_mask, :].reshape((src.shape[0], src.shape[1], src.shape[2]))
 
         pass
 
     return dst
+
+
