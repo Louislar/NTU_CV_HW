@@ -103,29 +103,52 @@ def warping(src, dst, H, ymin, ymax, xmin, xmax, direction='b'):
 
     if direction == 'b':
         # TODO: 3.apply H_inv to the destination pixels and retrieve (u,v) pixels, then reshape to (ymax-ymin),(xmax-xmin)
+        new_pixels_idx = np.dot(H_inv, pixels_idx)
+        new_pixels_idx[0, :] = np.divide(new_pixels_idx[0, :], new_pixels_idx[2, :])
+        new_pixels_idx[1, :] = np.divide(new_pixels_idx[1, :], new_pixels_idx[2, :])
+        new_pixels_idx[2, :] = np.ones_like(new_pixels_idx[2, :])
+        new_pixels_idx = new_pixels_idx.reshape((3, ymax-ymin, xmax-xmin))
+        new_pixels_idx = np.round(new_pixels_idx).astype(int)
+        # print(new_pixels_idx)
+        # print(new_pixels_idx.shape)
 
         # TODO: 4.calculate the mask of the transformed coordinate (should not exceed the boundaries of source image)
+        mask = np.ones_like(new_pixels_idx, dtype=bool)
+        mask[0, :, :] = (new_pixels_idx[0, :, :] >= 0) & (new_pixels_idx[0, :, :] < w_src)
+        mask[1, :, :] = (new_pixels_idx[1, :, :] >= 0) & (new_pixels_idx[1, :, :] < h_src)
+        new_mask = mask[0, :, :] & mask[1, :, :]
+        new_mask = new_mask.reshape((ymax-ymin, xmax-xmin))
+        # print('mask shape: ', new_mask.shape)
+
+        # Turn invalid pixel index to (0, 0, 0), without changing the shape of pixel index array (keep it as (3, ymax-ymin, xmax-xmin))
+        new_pixels_idx[:, ~new_mask] = 0 
 
         # TODO: 5.sample the source image with the masked and reshaped transformed coordinates
+        source_img_sample =  src[new_pixels_idx[1, :, :], new_pixels_idx[0, :, :], :] 
+        # print('source image shape: ', src.shape)
+        # print('sample source img shape: ', source_img_sample.shape)
 
         # TODO: 6. assign to destination image with proper masking
+        # print('destimation img shape: ', dst.shape)
+        dst[ymin:ymax, xmin:xmax, :][new_mask, :] = source_img_sample[new_mask, :]
 
+        # dst[new_mask, :] = source_img_sample[new_mask, :]
         pass
 
     elif direction == 'f':
         # TODO: 3.apply H to the source pixels and retrieve (u,v) pixels, then reshape to (ymax-ymin),(xmax-xmin)
         new_pixels_idx = np.dot(H, pixels_idx)
-        print(new_pixels_idx[:, :])
+        # print(new_pixels_idx[:, :])
         new_pixels_idx[0, :] = np.divide(new_pixels_idx[0, :], new_pixels_idx[2, :])
         new_pixels_idx[1, :] = np.divide(new_pixels_idx[1, :], new_pixels_idx[2, :])
         new_pixels_idx[2, :] = np.ones_like(new_pixels_idx[2, :])
 
-        print(pixels_idx.shape)
-        print(new_pixels_idx.shape)
-        print(new_pixels_idx[:, :])
+        # print(pixels_idx.shape)
+        # print(new_pixels_idx.shape)
+        # print(new_pixels_idx[:, :])
 
         new_pixels_idx = new_pixels_idx.reshape((3, ymax-ymin, xmax-xmin))
-        print(new_pixels_idx[:, 0, 0])
+        # print(new_pixels_idx[:, 0, 0])
 
         # TODO: 4.calculate the mask of the transformed coordinate (should not exceed the boundaries of destination image)
         mask = np.ones_like(new_pixels_idx, dtype=bool)
@@ -139,15 +162,15 @@ def warping(src, dst, H, ymin, ymax, xmin, xmax, direction='b'):
         valid_coord_idx = np.round(valid_coord_idx).astype(int)
         valid_coord_idx = valid_coord_idx[:2, :]
         valid_coord_idx = valid_coord_idx.reshape(2, ymax-ymin, xmax-xmin)
-        print(valid_coord_idx.shape)
-        print(valid_coord_idx)
+        # print(valid_coord_idx.shape)
+        # print(valid_coord_idx)
 
         # TODO: 6. assign to destination image using advanced array indicing
         # print(dst[valid_coord_idx[0, :, :], valid_coord_idx[1, :, :], :].shape)
         # new_mask = np.transpose(new_mask)
-        print(src.shape)
-        print(new_mask.shape)
-        print(src[new_mask, :].reshape((src.shape[0], src.shape[1], src.shape[2])).shape)
+        # print(src.shape)
+        # print(new_mask.shape)
+        # print(src[new_mask, :].reshape((src.shape[0], src.shape[1], src.shape[2])).shape)
         dst[valid_coord_idx[1, :, :], valid_coord_idx[0, :, :], :] = \
         src[new_mask, :].reshape((src.shape[0], src.shape[1], src.shape[2]))
 

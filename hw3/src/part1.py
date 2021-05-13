@@ -21,6 +21,9 @@ def transform(img, canvas, corners):
 
     return  warping(img, canvas, H, 0, h, 0, w, direction='f')
 
+    # Test for backward warpping 
+    # return warping(img, canvas, H, np.min(corners[:, 1]), np.max(corners[:, 1]), np.min(corners[:, 0]), np.max(corners[:, 0]), direction='b')
+
 
 if __name__ == "__main__":
 
