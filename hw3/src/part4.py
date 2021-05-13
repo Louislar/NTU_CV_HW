@@ -27,6 +27,17 @@ def panorama(imgs):
         im2 = imgs[idx + 1]
 
         # TODO: 1.feature detection & matching
+        orb = cv2.ORB_create()
+        kp1, des1 = orb.detectAndCompute(im1,None)
+        kp2, des2 = orb.detectAndCompute(im2,None)
+
+        bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+        matches = bf.match(des1,des2)
+        matches = sorted(matches, key = lambda x:x.distance)
+
+        img3 = cv2.drawMatches(im1,kp1,im2,kp2,matches[:10],None,flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+        plt.imshow(img3)
+        plt.show()
 
         # TODO: 2. apply RANSAC to choose best H
 
