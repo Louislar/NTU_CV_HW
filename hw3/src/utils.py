@@ -98,7 +98,7 @@ def warping(src, dst, H, ymin, ymax, xmin, xmax, direction='b'):
         meshgrid_y.reshape(meshgrid_y.shape[0]*meshgrid_y.shape[1]), 
         np.ones((meshgrid_y.shape[0]*meshgrid_y.shape[1]), dtype=int)
     ])
-    print(pixels_idx)
+    # print(pixels_idx)
 
 
     if direction == 'b':
