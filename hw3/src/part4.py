@@ -8,11 +8,11 @@ import logging
 random.seed(999)
 rnd_seed = 999  # For numpy.random.seed()
 
-def homography_and_ransac(pt_pairs1, pt_pairs2, s=8, t=1, T=10, N=10): 
+def homography_and_ransac(pt_pairs1, pt_pairs2, s=5, t=1, T=30, N=100): 
     '''
     Ref: http://6.869.csail.mit.edu/fa12/lectures/lecture13ransac/lecture13ransac.pdf (page 35)
-    :pt_pairs1: feature points from first image, arange by matching index (must have same size as pairs2)
-    :pt_pairs2: feature points from second image, arange by matching index 
+    :pt_pairs1: feature points from first image, arange by matching index (must have same size as pairs2) (this will be destination image --> canvas)
+    :pt_pairs2: feature points from second image, arange by matching index (this will be source image)
     :s: Randomly pick s points to construct H 
     :t: Distance between x_prime and H*x must smaller than t, then x will be inlier
     :T: Inlier set size bigger than T, stop re-compute H 
@@ -44,8 +44,8 @@ def homography_and_ransac(pt_pairs1, pt_pairs2, s=8, t=1, T=10, N=10):
         # print(rndPickIdx)
         rndPickPts1 = pt_pairs1[rndPickIdx, :]
         rndPickPts2 = pt_pairs2[rndPickIdx, :]
-        # print(rndPickPts1.shape)
-        # print(rndPickPts2.shape)
+        # print('Random pick points 1 shape: ', rndPickPts1.shape)
+        # print('Random pick points 2 shape: ', rndPickPts2.shape)
         estH = solve_homography(rndPickPts1, rndPickPts2)
         ## All the points in pair 1 needs to do transformation by homography
         afterHomography = np.dot(estH, pt_pairs1_homo)
@@ -69,7 +69,7 @@ def homography_and_ransac(pt_pairs1, pt_pairs2, s=8, t=1, T=10, N=10):
         if inlierIdxSet.shape[0] >= T: 
             pass
         print('inlier shape: ', inlierIdxSet.shape)
-        print(inlierIdxSet)
+        # print(inlierIdxSet)
 
         iterCount += 1
         rnd_seed += 1
@@ -78,7 +78,11 @@ def homography_and_ransac(pt_pairs1, pt_pairs2, s=8, t=1, T=10, N=10):
     inlierIdxSetPerIter = sorted(inlierIdxSetPerIter, key=lambda x: len(x))
     biggestInlierIdxSet = inlierIdxSetPerIter[-1][:, 0]
     print('Biggest inlier set size: ', len(biggestInlierIdxSet))
-    print(biggestInlierIdxSet)
+    # print(biggestInlierIdxSet)
+    ### If all the inlier set contains nothing (size == 0), then break 
+    if len(biggestInlierIdxSet) <= 0: 
+        print('No homography found')
+        return None
     bestH = solve_homography(pt_pairs1[biggestInlierIdxSet, :], pt_pairs2[biggestInlierIdxSet, :])
 
 
@@ -132,12 +136,30 @@ def panorama(imgs):
         # print(matchedfp1)
 
         # TODO: 2. apply RANSAC to choose best H
-        H = homography_and_ransac(matchedfp1, matchedfp2)
+        H = homography_and_ransac(matchedfp2, matchedfp1)   # img2 translate to img1 --> img1 coord = H * im2 coord 
 
         # TODO: 3. chain the homographies
+        last_best_H = np.dot(last_best_H, H)
 
         # TODO: 4. apply warping
-        break
+        ## Question: What is the destination coordinate? --> (ymin, ymax, xmin, xmax)?
+        # print(imgs[0].shape[0])
+        # print(imgs[0].shape[1])
+        # print(imgs[1].shape[0])
+        # print(imgs[1].shape[1])
+        # print(sum([i.shape[0] for i in imgs[:idx+1]]))
+        # print(sum([i.shape[0] for i in imgs[:idx+2]]))
+        # print(sum([i.shape[1] for i in imgs[:idx+1]]))
+        # print(sum([i.shape[1] for i in imgs[:idx+2]]))
+        dst = warping(im2, dst, last_best_H, 
+            0, 
+            imgs[0].shape[0], 
+            sum([i.shape[1] for i in imgs[:idx+1]]), 
+            sum([i.shape[1] for i in imgs[:idx+2]]), 
+            direction='b')
+        # break
+    # print(dst.shape)
+    out = dst
     return out
 
 
