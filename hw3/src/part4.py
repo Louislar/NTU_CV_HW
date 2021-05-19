@@ -103,6 +103,8 @@ def panorama(imgs):
     last_best_H = np.eye(3)
     out = None
 
+    dst_list = [dst.copy(), np.zeros((h_max, w_max, imgs[0].shape[2]), dtype=np.uint8), np.zeros((h_max, w_max, imgs[0].shape[2]), dtype=np.uint8)]
+
     # for all images to be stitched:
     for idx in range(len(imgs) - 1):
         im1 = imgs[idx]
@@ -157,11 +159,49 @@ def panorama(imgs):
             sum([i.shape[1] for i in imgs[:idx+1]]), 
             sum([i.shape[1] for i in imgs[:idx+2]]), 
             direction='b')
+
+
+
+        # TODO: 5. alpha blending
+        dst_list[idx+1] = warping(im2, dst_list[idx+1], last_best_H, 
+            0, 
+            dst.shape[0], 
+            0, 
+            dst.shape[1], 
+            direction='b')
         # break
     # print(dst.shape)
+    cv2.imwrite('output4_1.png', dst_list[0])
+    cv2.imwrite('output4_2.png', dst_list[1])
+    cv2.imwrite('output4_3.png', dst_list[2])
+    alpha_blending(dst_list)
     out = dst
     return out
 
+def alpha_blending(CanvasImgList): 
+    '''
+    Three same shape image(canvas), which has paste different source image on the cancas 
+    Just apply simple alpha blending, which means that alpha = 0.5
+    Ref: https://inst.eecs.berkeley.edu/~cs194-26/fa17/upload/files/proj6B/cs194-26-abw/ 
+    '''
+    newCanvas = np.zeros((CanvasImgList[0].shape[0], CanvasImgList[0].shape[1], CanvasImgList[0].shape[2]), dtype=np.uint8)
+    for idx in range(len(CanvasImgList) - 1):
+        im1 = CanvasImgList[idx]
+        im2 = CanvasImgList[idx + 1]
+
+
+        # Construct mask (Two images in a pair)
+        mask1 = np.where(im1>0, 1, 0)
+        mask2 = np.where(im2>0, 2, 0)
+        mask = mask1 + mask2
+        
+        
+        newCanvas[mask==1] = im1[mask==1] * 1.0 + im2[mask==1] * 0.0
+        newCanvas[mask==2] = im1[mask==2] * 0.0 + im2[mask==2] * 1.0
+        newCanvas[mask==3] = im1[mask==3] * 0.5 + im2[mask==3] * 0.5
+    
+    cv2.imwrite('output_test.png', newCanvas)
+    pass
 
 if __name__ == "__main__":
 
