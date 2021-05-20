@@ -170,11 +170,7 @@ def panorama(imgs):
             dst.shape[1], 
             direction='b')
         # break
-    # print(dst.shape)
-    cv2.imwrite('output4_1.png', dst_list[0])
-    cv2.imwrite('output4_2.png', dst_list[1])
-    cv2.imwrite('output4_3.png', dst_list[2])
-    alpha_blending(dst_list)
+    dst = alpha_blending(dst_list)
     out = dst
     return out
 
@@ -200,8 +196,8 @@ def alpha_blending(CanvasImgList):
         newCanvas[mask==2] = im1[mask==2] * 0.0 + im2[mask==2] * 1.0
         newCanvas[mask==3] = im1[mask==3] * 0.5 + im2[mask==3] * 0.5
     
-    cv2.imwrite('output_test.png', newCanvas)
-    pass
+    # cv2.imwrite('output_test.png', newCanvas)
+    return newCanvas
 
 if __name__ == "__main__":
 
