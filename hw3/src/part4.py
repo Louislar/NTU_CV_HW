@@ -68,7 +68,7 @@ def homography_and_ransac(pt_pairs1, pt_pairs2, s=5, t=1, T=30, N=100):
         inlierIdxSetPerIter.append(inlierIdxSet)
         if inlierIdxSet.shape[0] >= T: 
             pass
-        print('inlier shape: ', inlierIdxSet.shape)
+        # print('inlier shape: ', inlierIdxSet.shape)
         # print(inlierIdxSet)
 
         iterCount += 1
