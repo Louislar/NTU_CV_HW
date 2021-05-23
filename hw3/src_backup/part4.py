@@ -144,7 +144,6 @@ def panorama(imgs):
         last_best_H = np.dot(last_best_H, H)
 
         # TODO: 4. apply warping
-        ## Question: What is the destination coordinate? --> (ymin, ymax, xmin, xmax)?
         # print(imgs[0].shape[0])
         # print(imgs[0].shape[1])
         # print(imgs[1].shape[0])
