@@ -8,7 +8,7 @@ import logging
 random.seed(999)
 rnd_seed = 999  # For numpy.random.seed()
 
-def homography_and_ransac(pt_pairs1, pt_pairs2, s=5, t=1, T=30, N=100): 
+def homography_and_ransac(pt_pairs1, pt_pairs2, s=7, t=0.7, T=50, N=1500): 
     '''
     Ref: http://6.869.csail.mit.edu/fa12/lectures/lecture13ransac/lecture13ransac.pdf (page 35)
     :pt_pairs1: feature points from first image, arange by matching index (must have same size as pairs2) (this will be destination image --> canvas)
@@ -27,14 +27,14 @@ def homography_and_ransac(pt_pairs1, pt_pairs2, s=5, t=1, T=30, N=100):
 
     # Form points in homogeneous coordinate, and change to shape 3xN, 
     # for easy matrix multiplication 
-    print('point pair 1 shape: ', pt_pairs1.shape)
+    # print('point pair 1 shape: ', pt_pairs1.shape)
     pt_pairs1_homo = np.transpose(pt_pairs1)
     pt_pairs2_homo = np.transpose(pt_pairs2)
     tmpOneArr = np.ones_like(pt_pairs1_homo[0, :])
     pt_pairs1_homo = np.vstack([pt_pairs1_homo, tmpOneArr])
     pt_pairs2_homo = np.vstack([pt_pairs2_homo, tmpOneArr])
-    print('point pair 1 homogeneous shape: ', pt_pairs1_homo.shape)
-    print(tmpOneArr.shape)
+    # print('point pair 1 homogeneous shape: ', pt_pairs1_homo.shape)
+    # print(tmpOneArr.shape)
 
     # RANSAC
     while iterCount <= N:
@@ -67,7 +67,7 @@ def homography_and_ransac(pt_pairs1, pt_pairs2, s=5, t=1, T=30, N=100):
         inlierIdxSet = np.argwhere(sumOfSquare <= t)
         inlierIdxSetPerIter.append(inlierIdxSet)
         if inlierIdxSet.shape[0] >= T: 
-            pass
+            break
         # print('inlier shape: ', inlierIdxSet.shape)
         # print(inlierIdxSet)
 
@@ -105,19 +105,37 @@ def panorama(imgs):
 
     dst_list = [dst.copy(), np.zeros((h_max, w_max, imgs[0].shape[2]), dtype=np.uint8), np.zeros((h_max, w_max, imgs[0].shape[2]), dtype=np.uint8)]
 
+    ransac_param_list = [[9, 0.7, 50, 1500], [7, 0.7, 50, 3000]]
+
     # for all images to be stitched:
     for idx in range(len(imgs) - 1):
         im1 = imgs[idx]
         im2 = imgs[idx + 1]
 
         # TODO: 1.feature detection & matching
-        orb = cv2.ORB_create()
-        kp1, des1 = orb.detectAndCompute(im1,None)  # query image
-        kp2, des2 = orb.detectAndCompute(im2,None)  # train image
+        # orb = cv2.ORB_create()
+        # kp1, des1 = orb.detectAndCompute(im1,None)  # query image
+        # kp2, des2 = orb.detectAndCompute(im2,None)  # train image
 
-        bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-        matches = bf.match(des1,des2)
-        matches = sorted(matches, key = lambda x:x.distance)
+        # bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+        # matches = bf.match(des1,des2)
+        # matches = sorted(matches, key = lambda x:x.distance)
+
+        sift = cv2.SIFT_create()
+        kp1, des1 = sift.detectAndCompute(im1,None)
+        kp2, des2 = sift.detectAndCompute(im2,None)
+
+        FLANN_INDEX_KDTREE = 1
+        index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+        search_params = dict(checks = 50)
+        flann = cv2.FlannBasedMatcher(index_params, search_params)
+        matches = flann.knnMatch(des1,des2,k=2)
+        # store all the good matches as per Lowe's ratio test.
+        good = []
+        for m,n in matches:
+            if m.distance < 0.7*n.distance:
+                good.append(m)
+        matches = good
 
         # Matcher object reference: https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_feature2d/py_matcher/py_matcher.html 
         print('number of feature matched: ', len(matches))
@@ -138,7 +156,7 @@ def panorama(imgs):
         # print(matchedfp1)
 
         # TODO: 2. apply RANSAC to choose best H
-        H = homography_and_ransac(matchedfp2, matchedfp1)   # img2 translate to img1 --> img1 coord = H * im2 coord 
+        H = homography_and_ransac(matchedfp2, matchedfp1, *ransac_param_list[idx])   # img2 translate to img1 --> img1 coord = H * im2 coord 
 
         # TODO: 3. chain the homographies
         last_best_H = np.dot(last_best_H, H)
@@ -192,7 +210,7 @@ def alpha_blending(CanvasImgList):
         
         newCanvas[mask==1] = im1[mask==1] * 1.0 + newCanvas[mask==1] * 0.0
         newCanvas[mask==2] = im1[mask==2] * 0.0 + newCanvas[mask==2] * 1.0
-        newCanvas[mask==3] = im1[mask==3] * 0.5 + newCanvas[mask==3] * 0.5
+        newCanvas[mask==3] = im1[mask==3] * 0.7 + newCanvas[mask==3] * 0.3
 
     # TODO: Old version with wrong result
     # for idx in range(len(CanvasImgList) - 1):
