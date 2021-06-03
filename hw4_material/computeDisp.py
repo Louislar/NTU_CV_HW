@@ -133,16 +133,23 @@ def computeDisp(Il, Ir, max_disp):
     # >>> Cost Aggregation
     # TODO: Refine the cost according to nearby costs
     # [Tips] Joint bilateral filter (for the cost of each disparty)
-    guided_shift_right_disp = xip.guidedFilter(Il, shift_right_disp, radius=1, eps=50)
-    guided_shift_left_disp = xip.guidedFilter(Ir, shift_left_disp, radius=1, eps=50)
-    print(guided_shift_right_disp.shape)
+    # Ref: https://jinzhangyu.github.io/2018/09/06/2018-09-06-OpenCV-Python%E6%95%99%E7%A8%8B-16-%E5%B9%B3%E6%BB%91%E5%9B%BE%E5%83%8F-3/ 
+    guided_shift_right_disp = xip.guidedFilter(Il, shift_right_disp, radius=1, eps=60)
+    guided_shift_left_disp = xip.guidedFilter(Ir, shift_left_disp, radius=1, eps=60)
+    print('After guided shape: ', guided_shift_right_disp.shape)
 
 
     # >>> Disparity Optimization
     # TODO: Determine disparity based on estimated cost.
     # [Tips] Winner-take-all
-    np.argmin(guided_shift_right_disp, axis=2)
+    shift_right_WTA = np.argmin(guided_shift_right_disp, axis=2)
+    shift_left_WTA = np.argmin(guided_shift_left_disp, axis=2)
+    print('After WTA shape: ', shift_right_WTA.shape)
 
+    # Output a testing image, checking if codes above works fine
+    norm_sh_right_wta = np.zeros_like(shift_right_WTA)
+    norm_sh_right_wta = cv2.normalize(shift_right_WTA, None, 0, 255, cv2.NORM_MINMAX)
+    cv2.imwrite('./test.png', norm_sh_right_wta)
     
     # >>> Disparity Refinement
     # TODO: Do whatever to enhance the disparity map
