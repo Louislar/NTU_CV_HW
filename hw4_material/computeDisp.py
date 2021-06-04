@@ -144,16 +144,44 @@ def computeDisp(Il, Ir, max_disp):
     # [Tips] Winner-take-all
     shift_right_WTA = np.argmin(guided_shift_right_disp, axis=2)
     shift_left_WTA = np.argmin(guided_shift_left_disp, axis=2)
+    disparity_left = shift_right_WTA
+    disparity_right = shift_left_WTA
     print('After WTA shape: ', shift_right_WTA.shape)
 
     # Output a testing image, checking if codes above works fine
-    norm_sh_right_wta = np.zeros_like(shift_right_WTA)
-    norm_sh_right_wta = cv2.normalize(shift_right_WTA, None, 0, 255, cv2.NORM_MINMAX)
-    cv2.imwrite('./test.png', norm_sh_right_wta)
+    # norm_sh_right_wta = np.zeros_like(shift_right_WTA)
+    # norm_sh_right_wta = cv2.normalize(shift_right_WTA, None, 0, 255, cv2.NORM_MINMAX)
+    # cv2.imwrite('./test_right.png', norm_sh_right_wta)
+    # norm_sh_left_wta = np.zeros_like(shift_left_WTA)
+    # norm_sh_left_wta = cv2.normalize(shift_left_WTA, None, 0, 255, cv2.NORM_MINMAX)
+    # cv2.imwrite('./test_left.png', norm_sh_left_wta)
     
     # >>> Disparity Refinement
     # TODO: Do whatever to enhance the disparity map
     # [Tips] Left-right consistency check -> Hole filling -> Weighted median filtering (Opencv has implemented)
+
+    ## Check left and right consistency, if different then make hole
+    x_idx, y_idx = np.meshgrid(np.arange(w), np.arange(h))
+    xy_idx = np.vstack([x_idx.flatten(), y_idx.flatten()])
+    x_minus_disparity_idx = xy_idx[0, :] - disparity_left[xy_idx[1, :], xy_idx[0, :]]
+    disparity_right_minus_disp = disparity_right[xy_idx[1, :], x_minus_disparity_idx].reshape(h, w)
+    # - Make different disparity pixels value to max_disp + 5
+    diff_map = (disparity_left == disparity_right_minus_disp)
+    print(diff_map.shape)
+    disparity_left_with_holes = np.copy(disparity_left)
+    disparity_left_with_holes[~diff_map] = max_disp + 5
+
+    ### Test right image after minus disparity 
+    # norm_right_dis = cv2.normalize(disparity_right_minus_disp, None, 0, 255, cv2.NORM_MINMAX)
+    # cv2.imwrite('./test_right_after_disparity.png', norm_right_dis)
+    ### Test right image after minus disparity 
+    # norm_left_hole_dis = cv2.normalize(disparity_left_with_holes, None, 0, 255, cv2.NORM_MINMAX)
+    # cv2.imwrite('./test_left_after_holes.png', norm_left_hole_dis)
+
+    ## Hole filling
+    
+
+
 
 
     return labels.astype(np.uint8)
