@@ -179,8 +179,50 @@ def computeDisp(Il, Ir, max_disp):
     # cv2.imwrite('./test_left_after_holes.png', norm_left_hole_dis)
 
     ## Hole filling
+    ### Bounding point pad by maximum value = max_disp 
+    # - If pixel at board and it's a hole, then fill it with max_disp
+    x_board = (x_idx==0) | (x_idx==w-1)
+    y_board = (y_idx==0) | (y_idx==h-1)
+    board_and_hole_bool = (x_board | y_board) & (~diff_map)
+    disparity_left_with_holes[board_and_hole_bool] = max_disp
     
+    ### Fill the hole from left (first valid pixels disparity)
+    not_board_and_hole_bool = ~(x_board | y_board) & (~diff_map)
+    print(not_board_and_hole_bool)
+    print(not_board_and_hole_bool.sum())
 
+    #### Shift to right == find valid from left
+    disparity_left_fill_from_left = np.copy(disparity_left_with_holes)
+    cur_shifted_not_board_and_hole_bool = np.copy(not_board_and_hole_bool)
+    for _shift in range(1, w): 
+        # - If all pixel after shift is valid (False), then break 
+        if cur_shifted_not_board_and_hole_bool.sum() == 0: 
+            print('last shift: ', _shift)
+            break
+        # - Shift valid bool map 
+        pre_shifted_not_board_and_hole_bool = np.copy(cur_shifted_not_board_and_hole_bool)
+        cur_shifted_not_board_and_hole_bool[:, 1:] = np.logical_and(cur_shifted_not_board_and_hole_bool[:, 1:], cur_shifted_not_board_and_hole_bool[:, :-1])
+        cur_shifted_not_board_and_hole_bool[:, 0] = False
+        # - Check if any pixel change boolean value, if so, 
+        #   change their corresponding disparity map value by shifted disparity map 
+        # shifted_holes_bool = np.logical_xor(cur_shifted_not_board_and_hole_bool[:, 1:], cur_shifted_not_board_and_hole_bool[:, :-1])
+        shifted_holes_bool = np.logical_xor(pre_shifted_not_board_and_hole_bool, cur_shifted_not_board_and_hole_bool)
+        cur_shift_filled_holes_idx = np.where(shifted_holes_bool==True)
+        disparity_left_fill_from_left[cur_shift_filled_holes_idx[0], cur_shift_filled_holes_idx[1]] = \
+            disparity_left_fill_from_left[cur_shift_filled_holes_idx[0], cur_shift_filled_holes_idx[1]-_shift]
+        # print(shifted_holes_bool.shape)
+        # print(disparity_left_with_holes.shape)
+        # print(cur_shift_filled_holes_idx)
+        # print(shifted_holes_bool[cur_shift_filled_holes_idx[0], cur_shift_filled_holes_idx[1]])
+        # print(disparity_left_with_holes[cur_shift_filled_holes_idx[0], cur_shift_filled_holes_idx[1]])
+        # print('Filled holes after shift: ', shifted_holes_bool.sum())
+
+    ### Test after hole filling from left
+    # dl_fl = cv2.normalize(disparity_left_fill_from_left, None, 0, 255, cv2.NORM_MINMAX)
+    # cv2.imwrite('./test_disp_left_fill_hole_from_left.png', dl_fl)
+
+    ### Fill the hole from right 
+    #### Shift to left == find valid from right
 
 
 
