@@ -8,7 +8,7 @@ def lbpCalculate(imgIn, h, w):
     :imgIn: gray scale image
     :return: lbp array (h, w, 8)
     '''
-    imgInPad = cv2.copyMakeBorder(imgIn, 1, 1, 1, 1, cv2.BORDER_CONSTANT, 256)
+    imgInPad = cv2.copyMakeBorder(imgIn, 1, 1, 1, 1, cv2.BORDER_CONSTANT, 255)
     row_list = []
     for i in range(1,h+1): 
         _lbp_list = []
@@ -90,8 +90,7 @@ def computeDisp(Il, Ir, max_disp):
     # [Tips] Set costs of out-of-bound pixels = cost of closest valid pixel  
     # [Tips] Compute cost both Il to Ir and Ir to Il for later left-right consistency
 
-    # ## Shift original image from 0 to max_disp for guided filter (bgr 3 channel image)
-    # for _cur_disp in range(max_disp): 
+    ## Shift original image from 0 to max_disp for guided filter (bgr 3 channel image)
 
 
     ## Calculate one color channel's lbp first (3x3 LBP then hamming distance as cost)
@@ -134,8 +133,8 @@ def computeDisp(Il, Ir, max_disp):
     # TODO: Refine the cost according to nearby costs
     # [Tips] Joint bilateral filter (for the cost of each disparty)
     # Ref: https://jinzhangyu.github.io/2018/09/06/2018-09-06-OpenCV-Python%E6%95%99%E7%A8%8B-16-%E5%B9%B3%E6%BB%91%E5%9B%BE%E5%83%8F-3/ 
-    guided_shift_right_disp = xip.guidedFilter(Il, shift_right_disp, radius=1, eps=60)
-    guided_shift_left_disp = xip.guidedFilter(Ir, shift_left_disp, radius=1, eps=60)
+    guided_shift_right_disp = xip.guidedFilter(Il, shift_right_disp, radius=10, eps=100)
+    guided_shift_left_disp = xip.guidedFilter(Ir, shift_left_disp, radius=10, eps=100)
     print('After guided shape: ', guided_shift_right_disp.shape)
 
 
@@ -149,9 +148,8 @@ def computeDisp(Il, Ir, max_disp):
     print('After WTA shape: ', shift_right_WTA.shape)
 
     # Output a testing image, checking if codes above works fine
-    # norm_sh_right_wta = np.zeros_like(shift_right_WTA)
-    # norm_sh_right_wta = cv2.normalize(shift_right_WTA, None, 0, 255, cv2.NORM_MINMAX)
-    # cv2.imwrite('./test_right.png', norm_sh_right_wta)
+    norm_sh_right_wta = cv2.normalize(shift_right_WTA, None, 0, 255, cv2.NORM_MINMAX)
+    cv2.imwrite('./test_right.png', norm_sh_right_wta)
     # norm_sh_left_wta = np.zeros_like(shift_left_WTA)
     # norm_sh_left_wta = cv2.normalize(shift_left_WTA, None, 0, 255, cv2.NORM_MINMAX)
     # cv2.imwrite('./test_left.png', norm_sh_left_wta)
@@ -188,8 +186,8 @@ def computeDisp(Il, Ir, max_disp):
     
     ### Fill the hole from left (first valid pixels disparity)
     not_board_and_hole_bool = ~(x_board | y_board) & (~diff_map)
-    print(not_board_and_hole_bool)
-    print(not_board_and_hole_bool.sum())
+    # print(not_board_and_hole_bool)
+    # print(not_board_and_hole_bool.sum())
 
     #### Shift to right == find valid from left
     disparity_left_fill_from_left = np.copy(disparity_left_with_holes)
@@ -223,8 +221,52 @@ def computeDisp(Il, Ir, max_disp):
 
     ### Fill the hole from right 
     #### Shift to left == find valid from right
+    disparity_left_fill_from_right = np.copy(disparity_left_with_holes)
+    cur_shifted_not_board_and_hole_bool = np.copy(not_board_and_hole_bool)
+    for _shift in range(1, w): 
+        # - If all pixel after shift is valid (False), then break 
+        if cur_shifted_not_board_and_hole_bool.sum() == 0: 
+            print('last shift: ', _shift)
+            break
+        # - Shift valid bool map 
+        pre_shifted_not_board_and_hole_bool = np.copy(cur_shifted_not_board_and_hole_bool)
+        cur_shifted_not_board_and_hole_bool[:, :-1] = np.logical_and(cur_shifted_not_board_and_hole_bool[:, 1:], cur_shifted_not_board_and_hole_bool[:, :-1])
+        cur_shifted_not_board_and_hole_bool[:, -1] = False
+        # - Check if any pixel change boolean value, if so, 
+        #   change their corresponding disparity map value by shifted disparity map 
+        shifted_holes_bool = np.logical_xor(pre_shifted_not_board_and_hole_bool, cur_shifted_not_board_and_hole_bool)
+        cur_shift_filled_holes_idx = np.where(shifted_holes_bool==True)
+        disparity_left_fill_from_right[cur_shift_filled_holes_idx[0], cur_shift_filled_holes_idx[1]] = \
+            disparity_left_fill_from_right[cur_shift_filled_holes_idx[0], cur_shift_filled_holes_idx[1]-_shift]
 
+    ### Find minimum from "hole filling from left" and "hole filling from right"
+    disparity_left_fill_from_left = disparity_left_fill_from_left[:, :, None]
+    disparity_left_fill_from_right = disparity_left_fill_from_right[:, :, None]
+    disparity_left_fill_both = np.concatenate((disparity_left_fill_from_left, disparity_left_fill_from_right), axis=2)
+    disparity_left_fill_both_min = np.min(disparity_left_fill_both, axis=2)
+    disparity_left_with_holes[not_board_and_hole_bool] = disparity_left_fill_both_min[not_board_and_hole_bool]
+    disparity_left_holes_filled = disparity_left_with_holes
+    # print(disparity_left_fill_from_left.shape)
+    # print(disparity_left_fill_from_right.shape)
+    # print(disparity_left_fill_both.shape)
+    # print(disparity_left_fill_both_min.shape)
+    print((disparity_left_holes_filled==20).sum())
+    
+    ### Test after hole filling 
+    # dl_fl_fin = cv2.normalize(disparity_left_with_holes, None, 0, 255, cv2.NORM_MINMAX)
+    # cv2.imwrite('./test_disp_left_hole_filled.png', dl_fl_fin)
 
+    ## Weighted median filtering
+    Il_gray = cv2.cvtColor(Il, 6)   #   cv::COLOR_BGR2GRAY = 6, cv::COLOR_RGB2GRAY = 7
+    Il_gray = Il_gray.astype(np.uint8)
+    disparity_left_holes_filled = disparity_left_holes_filled.astype(np.uint8)
+    print(disparity_left_holes_filled.dtype)
+    print(Il_gray.dtype)
+    disparity_left_WMF = xip.weightedMedianFilter(Il_gray, disparity_left_holes_filled, r=5)
+    ### Test after WMF
+    # dl_wmf = cv2.normalize(disparity_left_WMF, None, 0, 255, cv2.NORM_MINMAX)
+    # cv2.imwrite('./test_disp_left_wmf.png', dl_wmf)
 
+    labels = disparity_left_WMF
     return labels.astype(np.uint8)
     
