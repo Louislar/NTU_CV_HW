@@ -106,12 +106,12 @@ def computeDisp(Il, Ir, max_disp):
     Ir_b_lbp = lbpCalculate(Ir_b, h, w)
     Ir_g_lbp = lbpCalculate(Ir_g, h, w)
     Ir_r_lbp = lbpCalculate(Ir_r, h, w)
-    print('left image blue channel shape: ', Il_b.shape)
-    print('left image blue channel lbp shape: ', Il_b_lbp.shape)
-    print(Il_b[:3, :3])
-    print(Ir_b[:5, :5])
-    print(Il_b_lbp[1, 1, :])
-    print(Ir_b_lbp[1, 1, :])
+    # print('left image blue channel shape: ', Il_b.shape)
+    # print('left image blue channel lbp shape: ', Il_b_lbp.shape)
+    # print(Il_b[:3, :3])
+    # print(Ir_b[:5, :5])
+    # print(Il_b_lbp[1, 1, :])
+    # print(Ir_b_lbp[1, 1, :])
 
     ## Compute cost of each disparity of each channel of each pixel 
     shift_right_b_disp = computeCensusCost(Il_b_lbp, Ir_b_lbp, max_disp)
@@ -121,12 +121,12 @@ def computeDisp(Il, Ir, max_disp):
     shift_left_b_disp = computeCensusCost(Il_b_lbp, Ir_b_lbp, max_disp, 'l')
     shift_left_g_disp = computeCensusCost(Il_g_lbp, Ir_g_lbp, max_disp, 'l')
     shift_left_r_disp = computeCensusCost(Il_r_lbp, Ir_r_lbp, max_disp, 'l')
-    print(shift_right_b_disp.shape)
+    # print(shift_right_b_disp.shape)
 
     ## sum up all the cost in each channel (BGR 3 channels)
     shift_right_disp = np.add(np.add(shift_right_b_disp, shift_right_g_disp), shift_right_r_disp).astype(np.float32)
     shift_left_disp = np.add(np.add(shift_left_b_disp, shift_left_g_disp), shift_left_r_disp).astype(np.float32)
-    print(shift_right_disp.shape)
+    # print(shift_right_disp.shape)
 
 
     # >>> Cost Aggregation
@@ -135,7 +135,7 @@ def computeDisp(Il, Ir, max_disp):
     # Ref: https://jinzhangyu.github.io/2018/09/06/2018-09-06-OpenCV-Python%E6%95%99%E7%A8%8B-16-%E5%B9%B3%E6%BB%91%E5%9B%BE%E5%83%8F-3/ 
     guided_shift_right_disp = xip.guidedFilter(Il, shift_right_disp, radius=10, eps=100)
     guided_shift_left_disp = xip.guidedFilter(Ir, shift_left_disp, radius=10, eps=100)
-    print('After guided shape: ', guided_shift_right_disp.shape)
+    # print('After guided shape: ', guided_shift_right_disp.shape)
 
 
     # >>> Disparity Optimization
@@ -145,11 +145,11 @@ def computeDisp(Il, Ir, max_disp):
     shift_left_WTA = np.argmin(guided_shift_left_disp, axis=2)
     disparity_left = shift_right_WTA
     disparity_right = shift_left_WTA
-    print('After WTA shape: ', shift_right_WTA.shape)
+    # print('After WTA shape: ', shift_right_WTA.shape)
 
     # Output a testing image, checking if codes above works fine
-    norm_sh_right_wta = cv2.normalize(shift_right_WTA, None, 0, 255, cv2.NORM_MINMAX)
-    cv2.imwrite('./test_right.png', norm_sh_right_wta)
+    # norm_sh_right_wta = cv2.normalize(shift_right_WTA, None, 0, 255, cv2.NORM_MINMAX)
+    # cv2.imwrite('./test_right.png', norm_sh_right_wta)
     # norm_sh_left_wta = np.zeros_like(shift_left_WTA)
     # norm_sh_left_wta = cv2.normalize(shift_left_WTA, None, 0, 255, cv2.NORM_MINMAX)
     # cv2.imwrite('./test_left.png', norm_sh_left_wta)
@@ -165,7 +165,7 @@ def computeDisp(Il, Ir, max_disp):
     disparity_right_minus_disp = disparity_right[xy_idx[1, :], x_minus_disparity_idx].reshape(h, w)
     # - Make different disparity pixels value to max_disp + 5
     diff_map = (disparity_left == disparity_right_minus_disp)
-    print(diff_map.shape)
+    # print(diff_map.shape)
     disparity_left_with_holes = np.copy(disparity_left)
     disparity_left_with_holes[~diff_map] = max_disp + 5
 
@@ -195,7 +195,7 @@ def computeDisp(Il, Ir, max_disp):
     for _shift in range(1, w): 
         # - If all pixel after shift is valid (False), then break 
         if cur_shifted_not_board_and_hole_bool.sum() == 0: 
-            print('last shift: ', _shift)
+            # print('last shift: ', _shift)
             break
         # - Shift valid bool map 
         pre_shifted_not_board_and_hole_bool = np.copy(cur_shifted_not_board_and_hole_bool)
@@ -226,7 +226,7 @@ def computeDisp(Il, Ir, max_disp):
     for _shift in range(1, w): 
         # - If all pixel after shift is valid (False), then break 
         if cur_shifted_not_board_and_hole_bool.sum() == 0: 
-            print('last shift: ', _shift)
+            # print('last shift: ', _shift)
             break
         # - Shift valid bool map 
         pre_shifted_not_board_and_hole_bool = np.copy(cur_shifted_not_board_and_hole_bool)
@@ -250,7 +250,7 @@ def computeDisp(Il, Ir, max_disp):
     # print(disparity_left_fill_from_right.shape)
     # print(disparity_left_fill_both.shape)
     # print(disparity_left_fill_both_min.shape)
-    print((disparity_left_holes_filled==20).sum())
+    # print((disparity_left_holes_filled==20).sum())
     
     ### Test after hole filling 
     # dl_fl_fin = cv2.normalize(disparity_left_with_holes, None, 0, 255, cv2.NORM_MINMAX)
@@ -260,8 +260,8 @@ def computeDisp(Il, Ir, max_disp):
     Il_gray = cv2.cvtColor(Il, 6)   #   cv::COLOR_BGR2GRAY = 6, cv::COLOR_RGB2GRAY = 7
     Il_gray = Il_gray.astype(np.uint8)
     disparity_left_holes_filled = disparity_left_holes_filled.astype(np.uint8)
-    print(disparity_left_holes_filled.dtype)
-    print(Il_gray.dtype)
+    # print(disparity_left_holes_filled.dtype)
+    # print(Il_gray.dtype)
     disparity_left_WMF = xip.weightedMedianFilter(Il_gray, disparity_left_holes_filled, r=5)
     ### Test after WMF
     # dl_wmf = cv2.normalize(disparity_left_WMF, None, 0, 255, cv2.NORM_MINMAX)
